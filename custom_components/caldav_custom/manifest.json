@@ -7,5 +7,5 @@
   "iot_class": "cloud_polling",
   "loggers": ["caldav", "vobject"],
   "requirements": ["git+https://github.com/mamogaaa/caldav.git@0dc591f0cd31ebef60b2e2def29fb17d37f6b0e8", "icalendar==6.1.0"],
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

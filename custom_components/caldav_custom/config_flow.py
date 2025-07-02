@@ -67,7 +67,22 @@ class CalDavConfigFlow(ConfigFlow, domain=DOMAIN):
             ssl_verify_cert=user_input[CONF_VERIFY_SSL],
         )
         try:
+            # Try basic connectivity first - this might fail with PropfindError on some servers
             await self.hass.async_add_executor_job(client.principal)
+        except PropfindError as err:
+            _LOGGER.warning("CalDAV PropfindError during principal() call: %s", err)
+            # PropfindError during principal() often indicates 400 Bad Request
+            # Try alternative connection test using calendar home set discovery
+            if "400" in str(err):
+                try:
+                    # Alternative test: try to find calendars directly
+                    calendars = await self.hass.async_add_executor_job(client.calendars)
+                    _LOGGER.info("Connection test passed via calendar discovery despite PropfindError")
+                    return None
+                except Exception as fallback_err:
+                    _LOGGER.warning("Alternative connection test also failed: %s", fallback_err)
+                    return "cannot_connect"
+            return "cannot_connect"
         except AuthorizationError as err:
             _LOGGER.warning("Authorization Error connecting to CalDAV server: %s", err)
             if err.reason == "Unauthorized":
@@ -77,16 +92,6 @@ class CalDavConfigFlow(ConfigFlow, domain=DOMAIN):
             return "cannot_connect"
         except requests.ConnectionError as err:
             _LOGGER.warning("Connection Error connecting to CalDAV server: %s", err)
-            return "cannot_connect"
-        except PropfindError as err:
-            _LOGGER.warning("CalDAV PropfindError: %s", err)
-            # PropfindError might indicate a 400 Bad Request, but if we can still 
-            # establish basic connectivity, we should allow the configuration
-            # The library should handle calendar operations with appropriate fallbacks
-            if "400" in str(err):
-                _LOGGER.info("Server returned 400 Bad Request - this is often handled by caldav library fallbacks")
-                # Don't return an error - let the integration proceed if basic auth works
-                return None
             return "cannot_connect"
         except DAVError as err:
             _LOGGER.warning("CalDAV client error: %s", err)
