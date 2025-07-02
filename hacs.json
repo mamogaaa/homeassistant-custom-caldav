@@ -1,0 +1,7 @@
+{
+  "name": "CalDAV Custom",
+  "content_in_root": false,
+  "filename": "caldav_custom",
+  "country": [],
+  "homeassistant": "2025.6.0"
+}

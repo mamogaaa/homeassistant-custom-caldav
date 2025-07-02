@@ -1,0 +1,11 @@
+{
+  "domain": "caldav_custom",
+  "name": "CalDAV Custom",
+  "codeowners": ["@mamogaaa"],
+  "config_flow": true,
+  "documentation": "https://github.com/mamogaaa/ha-custom-caldav",
+  "iot_class": "cloud_polling",
+  "loggers": ["caldav", "vobject"],
+  "requirements": ["git+https://github.com/mamogaaa/caldav.git@fix-calendar-server-400-bad-request", "icalendar==6.1.0"],
+  "version": "1.0.0"
+}
