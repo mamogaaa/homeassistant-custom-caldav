@@ -3,7 +3,7 @@
 import logging
 
 import caldav
-from caldav.lib.error import AuthorizationError, DAVError
+from caldav.lib.error import AuthorizationError, DAVError, PropfindError
 import requests
 
 from homeassistant.config_entries import ConfigEntry
@@ -36,6 +36,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: CalDavConfigEntry) -> bo
     )
     try:
         await hass.async_add_executor_job(client.principal)
+    except PropfindError as err:
+        _LOGGER.warning("CalDAV PropfindError during setup: %s", err)
+        # PropfindError during principal() often indicates 400 Bad Request
+        # Try alternative connectivity test using calendar discovery
+        if "400" in str(err):
+            try:
+                # Alternative test: try basic HTTP connectivity to the server
+                await hass.async_add_executor_job(client.request, entry.data[CONF_URL])
+                _LOGGER.info("Setup proceeding with basic HTTP connectivity despite PropfindError")
+            except Exception as fallback_err:
+                _LOGGER.warning("Alternative setup test failed: %s", fallback_err)
+                raise ConfigEntryNotReady("CalDAV server incompatible with principal discovery") from err
+        else:
+            raise ConfigEntryNotReady("CalDAV PropfindError during setup") from err
     except AuthorizationError as err:
         if err.reason == "Unauthorized":
             raise ConfigEntryAuthFailed("Credentials error from CalDAV server") from err

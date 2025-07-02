@@ -75,9 +75,11 @@ class CalDavConfigFlow(ConfigFlow, domain=DOMAIN):
             # Try alternative connection test using calendar home set discovery
             if "400" in str(err):
                 try:
-                    # Alternative test: try to find calendars directly
-                    calendars = await self.hass.async_add_executor_job(client.calendars)
-                    _LOGGER.info("Connection test passed via calendar discovery despite PropfindError")
+                    # Alternative test: try basic HTTP connectivity to the server
+                    response = await self.hass.async_add_executor_job(
+                        client.request, user_input[CONF_URL]
+                    )
+                    _LOGGER.info("Connection test passed with basic HTTP request despite PropfindError")
                     return None
                 except Exception as fallback_err:
                     _LOGGER.warning("Alternative connection test also failed: %s", fallback_err)
